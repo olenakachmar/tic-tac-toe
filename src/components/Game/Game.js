@@ -4,6 +4,8 @@ import Announcment from '../Announcment';
 import RecetButton from '../RecetButton';
 import Tile from '../Tile';
 
+import './Game.css';
+
 class Game extends Component {
   constructor() {
     super();
@@ -191,18 +193,22 @@ class Game extends Component {
     return (
       <div className="container">
         <div className="menu">
-          <h1> Tic-Tac_toe</h1>
+          <h1> Tic-Tac_Toe</h1>
           <Announcment winner={this.state.winner} />
           <RecetButton reset={this.resetBoard} />
         </div>
-        {this.state.gameBoard.map((value, i) => (
-          <Tile
+        <div className="tileWrapper">
+          {this.state.gameBoard.map((value, i) => (
+            <Tile
             key={i}
             loc={i}
             value={value}
             gameLoop={this.gameLoop}
+            className="tile"
           />
         ))}
+        </div>
+        
       </div>
     )
   }

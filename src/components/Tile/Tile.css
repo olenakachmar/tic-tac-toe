@@ -1,13 +1,10 @@
 .tile {
-  width: 25%;
+  width: 30%;
   height: 150px;
   font-size: 60px;
   background: yellow;
-  border: 8px soled green;
   display: inline-block;
-  /* float: left; */
   text-align: center;
-  line-height: 150px;
   margin: 10px;
 
 }
