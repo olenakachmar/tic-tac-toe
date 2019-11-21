@@ -3,7 +3,6 @@ import React, { Component } from 'react';
 import Announcment from '../Announcment';
 import RecetButton from '../RecetButton';
 import Tile from '../Tile';
-import { declareModuleExports } from '@babel/types';
 
 class Game extends Component {
   constructor() {
@@ -15,83 +14,165 @@ class Game extends Component {
         ' ', ' ', ' '
       ],
       turn: 'x',
-      winner: null
+      winner: null,
+      maxPlayer: 'x',
+      minPlayer: 'o'
     }
   }
 
-  updateBoard = (loc, player) => {
-    if(this.state.gameBoard[loc] === 'x' || this.state.gameBoard[loc] === 'o' || this.state.winner) {
+  tie = (board) => {
+    let moves = board.join('').replace(/ /g, '');
+    if(moves.length === 9) {
+      return true;
+    }
+    return false;
+  }
+
+  winner = (board, player) => {
+    if(
+      (board[0] === player && board[1] === player && board[2] === player) ||
+      (board[3] === player && board[4] === player && board[5] === player) ||
+      (board[6] === player && board[7] === player && board[8] === player) ||
+      (board[0] === player && board[3] === player && board[6] === player) ||
+      (board[1] === player && board[4] === player && board[7] === player) ||
+      (board[2] === player && board[5] === player && board[8] === player) ||
+      (board[0] === player && board[4] === player && board[8] === player) ||
+      (board[2] === player && board[4] === player && board[6] === player)
+    ) {
+      return true;
+    } else {
+      return null;
+    }
+  }
+
+  copyBoard = (board) => {
+    return board.slice(0);
+  }
+
+  validMove = (move, player, board) => {
+    let newBoard = this.copyBoard(board);
+
+    if(newBoard[move] === ' ') {
+      newBoard[move] = player;
+      return newBoard;
+    } else {
+      return null;
+    }
+  }
+
+  findAiMove = (board) => {
+    let bestMoveScore = 100;
+    let move = null;
+
+    if(this.winner(board, 'x' ) || this.winner(board, 'o' ) || this.tie(board) ) {
+      return null;
+    }
+
+    for(let i = 0; i < board.length; i++) {
+      let newBoard = this.validMove(i, this.state.minPlayer, board);
+      
+      if(newBoard) {
+        let moveScore = this.maxScore(newBoard);
+        if(moveScore < bestMoveScore) {
+          bestMoveScore = moveScore;
+          move = i;
+        }
+      }
+    }
+
+    return move;
+  }
+
+  minScore = (board) => {
+    let bestMoveValue;
+
+    if(this.winner(board, 'x')) {
+      return 10;
+    } else if (this.winner(board, 'o')) {
+      return -10;
+    } else if (this.tie(board)) {
+      return 0;
+    } else {
+      bestMoveValue = 100;
+      // let move = 0;
+      for (let i = 0; i < board.length; i++) {
+        let newBoard = this.validMove(i, this.state.minPlayer, board);
+        if(newBoard) {
+          let predictedMoveValue = this.maxScore(newBoard);
+          if(predictedMoveValue < bestMoveValue) {
+            bestMoveValue = predictedMoveValue;
+            // move = i;
+          }
+        }
+      }
+
+      return bestMoveValue;
+    }
+  }
+
+  maxScore = (board) => {
+    let bestMoveValue;
+    if(this.winner(board, 'x')) {
+      return 10;
+    } else if (this.winner(board, 'o')) {
+      return -10;
+    } else if (this.tie(board)) {
+      return 0;
+    } else {
+      bestMoveValue = -100;
+      for (let i = 0; i < board.length; i++) {
+        let newBoard = this.validMove(i, this.state.maxPlayer, board);
+        if(newBoard) {
+          let predictedMoveValue = this.maxScore(newBoard);
+          if(predictedMoveValue > bestMoveValue) {
+            bestMoveValue = predictedMoveValue
+          }
+        }
+      }
+
+      return bestMoveValue;
+    }
+  }
+
+  gameLoop = (move) => {
+    let player = this.state.turn;
+    let currentGameBoard = this.validMove(move, player, this.state.gameBoard);
+
+    if(this.winner(currentGameBoard, player)) {
+      this.setState({
+        gameBoard: currentGameBoard,
+        winner: player
+      });
       return;
     }
-    let currentGameBoard = this.state.gameBoard;
-    currentGameBoard.splice(loc, 1, this.state.turn);
-    this.setState({gameBoard: currentGameBoard})
-
-    let topRow = this.state.gameBoard[0] + this.state.gameBoard[1] + this.state.gameBoard[2];
-    if(topRow.match(/xxx|ooo/)) {
+    if(this.tie(currentGameBoard)) {
       this.setState({
-        winner: this.state.turn
+        gameBoard: currentGameBoard,
+        winner: 'd'
       });
-      return
+      return;
     }
 
-    let middleRow = this.state.gameBoard[3] + this.state.gameBoard[4] + this.state.gameBoard[5];
-    if(middleRow.match(/xxx|ooo/)) {
+    player = 'o';
+    currentGameBoard = this.validMove(this.findAiMove(currentGameBoard), player, currentGameBoard);
+    if(this.winner(currentGameBoard, player)) {
       this.setState({
-        winner: this.state.turn
+        gameBoard: currentGameBoard,
+        winner: player
       });
-      return
-    };
-
-    let leftCol = this.state.gameBoard[0] + this.state.gameBoard[3] + this.state.gameBoard[6];
-    if(leftCol.match(/xxx|ooo/)) {
-      this.setState({
-        winner: this.state.turn
-      });
-      return
+      return;
     }
-
-    let middleCol = this.state.gameBoard[1] + this.state.gameBoard[4] + this.state.gameBoard[7];
-    if(middleCol.match(/xxx|ooo/)) {
+    if(this.tie(currentGameBoard)) {
       this.setState({
-        winner: this.state.turn
+        gameBoard: currentGameBoard,
+        winner: 'd'
       });
-      return
-    }
-
-    let rightCol = this.state.gameBoard[2] + this.state.gameBoard[5] + this.state.gameBoard[8];
-    if(rightCol.match(/xxx|ooo/)) {
-      this.setState({
-        winner: this.state.turn
-      });
-      return
-    }
-
-    let leftDiag = this.state.gameBoard[0] + this.state.gameBoard[4] + this.state.gameBoard[7];
-    if(leftDiag.match(/xxx|ooo/)) {
-      this.setState({
-        winner: this.state.turn
-      });
-      return
-    }
-
-    let rightDiag = this.state.gameBoard[2] + this.state.gameBoard[4] + this.state.gameBoard[6];
-    if(rightDiag.match(/xxx|ooo/)) {
-      this.setState({
-        winner: this.state.turn
-      });
-      return
-    }
-
-    let moves = this.state.gameBoard.join('').replace(/ /g, '');
-    if(moves.length === 9) {
-      this.setState({winner: 'd'})
-      // this.resetBoard();
+      return;
     }
 
     this.setState({
-      turn: (this.state.turn === 'x') ? '0' : 'x'
-    })
+      gameBoard: currentGameBoard
+    });
   }
 
   resetBoard = () => {
@@ -119,8 +200,7 @@ class Game extends Component {
             key={i}
             loc={i}
             value={value}
-            updateBoard={this.updateBoard.bind(this)}
-            turn={this.state.turn}
+            gameLoop={this.gameLoop}
           />
         ))}
       </div>
